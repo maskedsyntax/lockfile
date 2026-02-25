@@ -13,6 +13,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -46,21 +47,25 @@ public class VaultView extends BorderPane {
         setTop(createToolBar());
         
         SplitPane splitPane = new SplitPane();
-        splitPane.getItems().addAll(createFolderView(), createEntryView());
-        splitPane.setDividerPositions(0.3f);
+        VBox folderSection = createFolderView();
+        VBox entrySection = createEntryView();
+        
+        splitPane.getItems().addAll(folderSection, entrySection);
+        splitPane.setDividerPositions(0.25f);
         setCenter(splitPane);
     }
 
     private ToolBar createToolBar() {
-        Button addFolderBtn = new Button("New Folder");
-        Button addEntryBtn = new Button("New Entry");
-        Button editEntryBtn = new Button("Edit Entry");
-        Button deleteEntryBtn = new Button("Delete Entry");
-        Button lockBtn = new Button("Lock Vault");
-        Button exportBtn = new Button("Export JSON");
+        Button addFolderBtn = new Button("📂 New Folder");
+        Button addEntryBtn = new Button("➕ New Entry");
+        Button editEntryBtn = new Button("📝 Edit");
+        Button deleteEntryBtn = new Button("🗑️ Delete");
+        Button lockBtn = new Button("🔒 Lock");
+        Button exportBtn = new Button("📤 Export");
 
         TextField searchField = new TextField();
-        searchField.setPromptText("Search entries...");
+        searchField.setPromptText("🔍 Search entries...");
+        searchField.setPrefWidth(250);
         searchField.textProperty().addListener((obs, oldVal, newVal) -> handleSearch(newVal));
 
         addFolderBtn.setOnAction(e -> handleAddFolder());
@@ -70,7 +75,10 @@ public class VaultView extends BorderPane {
         lockBtn.setOnAction(e -> handleLock());
         exportBtn.setOnAction(e -> handleExport());
 
-        return new ToolBar(addFolderBtn, addEntryBtn, editEntryBtn, deleteEntryBtn, new Separator(), searchField, new Separator(), lockBtn, exportBtn);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+        return new ToolBar(addFolderBtn, addEntryBtn, new Separator(), editEntryBtn, deleteEntryBtn, spacer, searchField, new Separator(), lockBtn, exportBtn);
     }
 
     private void handleSearch(String query) {
@@ -95,47 +103,76 @@ public class VaultView extends BorderPane {
     }
 
     private VBox createFolderView() {
-        VBox vbox = new VBox();
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new Insets(10));
+        vbox.setStyle("-fx-background-color: #181818;");
+
+        Label sidebarTitle = new Label("COLLECTIONS");
+        sidebarTitle.setStyle("-fx-text-fill: #666; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 5 0 5 10;");
+
         folderTreeView = new TreeView<>();
-        folderTreeView.setShowRoot(true);
+        folderTreeView.setShowRoot(false);
 
         folderTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 currentFolder = newVal.getValue();
-                updateEntryTable();
             } else {
                 currentFolder = null;
-                currentEntries.setAll(vault.getRootEntries());
             }
+            updateEntryTable();
         });
 
-        vbox.getChildren().add(folderTreeView);
+        vbox.getChildren().addAll(sidebarTitle, folderTreeView);
         VBox.setVgrow(folderTreeView, javafx.scene.layout.Priority.ALWAYS);
         return vbox;
     }
 
     private VBox createEntryView() {
-        VBox vbox = new VBox(10);
-        vbox.setPadding(new Insets(10));
-
+        VBox vbox = new VBox(0);
+        
         entryTableView = new TableView<>();
+        entryTableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         currentEntries = FXCollections.observableArrayList();
         entryTableView.setItems(currentEntries);
 
-        TableColumn<Entry, String> titleCol = new TableColumn<>("Title");
+        TableColumn<Entry, String> titleCol = new TableColumn<>("TITLE");
         titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
-        titleCol.setPrefWidth(150);
-
-        TableColumn<Entry, String> userCol = new TableColumn<>("Username");
+        
+        TableColumn<Entry, String> userCol = new TableColumn<>("USERNAME");
         userCol.setCellValueFactory(new PropertyValueFactory<>("username"));
-        userCol.setPrefWidth(150);
 
         entryTableView.getColumns().addAll(titleCol, userCol);
 
-        HBox actionsBox = new HBox(10);
-        Button copyUserBtn = new Button("Copy User");
-        Button copyPassBtn = new Button("Copy Password (10s)");
-        Button getTotpBtn = new Button("Get TOTP");
+        // Preview Area
+        VBox previewPane = new VBox(15);
+        previewPane.setPadding(new Insets(20));
+        previewPane.setStyle("-fx-background-color: #1e1e1e; -fx-border-color: #2d2d2d; -fx-border-width: 1 0 0 0;");
+        previewPane.setPrefHeight(250);
+
+        Label previewTitle = new Label("Entry Details");
+        previewTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+
+        HBox quickActions = new HBox(10);
+        Button copyUserBtn = new Button("👤 Copy User");
+        Button copyPassBtn = new Button("🔑 Copy Pass");
+        Button getTotpBtn = new Button("🕒 TOTP");
+        quickActions.getChildren().addAll(copyUserBtn, copyPassBtn, getTotpBtn);
+
+        Label notesLabel = new Label();
+        notesLabel.setWrapText(true);
+        notesLabel.setStyle("-fx-text-fill: #aaa; -fx-font-size: 13px;");
+
+        previewPane.getChildren().addAll(previewTitle, quickActions, notesLabel);
+
+        entryTableView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                previewTitle.setText(newVal.getTitle());
+                notesLabel.setText(newVal.getNotes() != null && !newVal.getNotes().isEmpty() ? newVal.getNotes() : "No notes available.");
+            } else {
+                previewTitle.setText("Select an entry");
+                notesLabel.setText("");
+            }
+        });
 
         copyUserBtn.setOnAction(e -> {
             Entry selected = entryTableView.getSelectionModel().getSelectedItem();
@@ -155,17 +192,13 @@ public class VaultView extends BorderPane {
             Entry selected = entryTableView.getSelectionModel().getSelectedItem();
             if (selected != null && selected.getTotpSecret() != null && !selected.getTotpSecret().isEmpty()) {
                 String totp = TOTPUtils.generateTOTP(selected.getTotpSecret());
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "TOTP: " + totp + "\\n(Copied to clipboard)", ButtonType.OK);
                 ClipboardUtils.copyWithAutoClear(totp, 10);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "TOTP: " + totp + "\n(Copied to clipboard)", ButtonType.OK);
                 alert.showAndWait();
-            } else {
-                new Alert(Alert.AlertType.WARNING, "No TOTP secret configured.", ButtonType.OK).show();
             }
         });
 
-        actionsBox.getChildren().addAll(copyUserBtn, copyPassBtn, getTotpBtn);
-
-        vbox.getChildren().addAll(entryTableView, actionsBox);
+        vbox.getChildren().addAll(entryTableView, previewPane);
         VBox.setVgrow(entryTableView, javafx.scene.layout.Priority.ALWAYS);
         return vbox;
     }
