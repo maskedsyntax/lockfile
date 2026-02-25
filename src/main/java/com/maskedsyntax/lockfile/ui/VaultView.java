@@ -9,6 +9,7 @@ import com.maskedsyntax.lockfile.utils.VaultManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
@@ -111,6 +112,15 @@ public class VaultView extends BorderPane {
         Label sidebarTitle = new Label("COLLECTIONS");
         sidebarTitle.setStyle("-fx-text-fill: #666; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 5 0 5 10;");
 
+        Button homeBtn = new Button("Home", new FontIcon("fth-home"));
+        homeBtn.setMaxWidth(Double.MAX_VALUE);
+        homeBtn.setAlignment(Pos.CENTER_LEFT);
+        homeBtn.setOnAction(e -> {
+            folderTreeView.getSelectionModel().clearSelection();
+            currentFolder = null;
+            updateEntryTable();
+        });
+
         folderTreeView = new TreeView<>();
         folderTreeView.setShowRoot(false);
 
@@ -123,7 +133,7 @@ public class VaultView extends BorderPane {
             updateEntryTable();
         });
 
-        vbox.getChildren().addAll(sidebarTitle, folderTreeView);
+        vbox.getChildren().addAll(sidebarTitle, homeBtn, folderTreeView);
         VBox.setVgrow(folderTreeView, javafx.scene.layout.Priority.ALWAYS);
         return vbox;
     }
@@ -250,6 +260,7 @@ public class VaultView extends BorderPane {
         dialog.setTitle("New Folder");
         dialog.setHeaderText("Create a new folder");
         dialog.setContentText("Folder Name:");
+        dialog.setResizable(true);
         dialog.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
 
         Optional<String> result = dialog.showAndWait();

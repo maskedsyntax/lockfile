@@ -59,7 +59,7 @@
 }
 
 .tree-cell:filled:selected {
-    -fx-background-color: #2d2d2d;
+    -fx-background-color: #0078d4;
     -fx-text-fill: #ffffff;
 }
 
@@ -71,7 +71,7 @@
 .table-view {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-selection-bar: #2d2d2d;
+    -fx-selection-bar: #0078d4;
     -fx-selection-bar-non-focused: #252525;
 }
 
@@ -87,9 +87,14 @@
 }
 
 .table-view .column-header .label {
-    -fx-text-fill: #888888;
+    -fx-text-fill: #0078d4;
     -fx-font-weight: bold;
     -fx-font-size: 11px;
+}
+
+.table-cell {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
 }
 
 .table-row-cell {
@@ -103,7 +108,7 @@
 }
 
 .table-row-cell:filled:selected {
-    -fx-background-color: #2d2d2d;
+    -fx-background-color: #0078d4;
     -fx-text-fill: white;
 }
 
@@ -131,9 +136,10 @@
     -fx-background-color: #2d2d2d;
 }
 
-/* Custom Cards/Containers */
+/* Dialog Styling */
 .dialog-pane {
     -fx-background-color: #121212;
+    -fx-header-panel-background: #121212;
 }
 
 .dialog-pane > .button-bar > .container {
@@ -142,6 +148,15 @@
 
 .dialog-pane .label {
     -fx-text-fill: #e0e0e0;
+}
+
+.dialog-pane:header .header-panel {
+    -fx-background-color: #121212;
+}
+
+.dialog-pane:header .header-panel .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
 }
 
 .dialog-pane .text-field {
@@ -157,6 +172,3 @@
 .ikonli-font-icon {
     -fx-icon-color: #e0e0e0;
 }
-
-
-

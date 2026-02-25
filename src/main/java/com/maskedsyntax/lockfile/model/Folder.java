@@ -25,6 +25,11 @@ public class Folder {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
+    @Override
+    public String toString() {
+        return name != null ? name : "Unnamed Folder";
+    }
+
     public List<Folder> getSubFolders() { return subFolders; }
     public void setSubFolders(List<Folder> subFolders) { this.subFolders = subFolders; }
 
