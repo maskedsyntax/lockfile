@@ -20,6 +20,6 @@ A fully offline credential vault with strong encryption, built with Java and Jav
 
 ## Build and Run
 ```bash
-mvn clean install
-mvn javafx:run
+gradle build
+gradle run
 ```

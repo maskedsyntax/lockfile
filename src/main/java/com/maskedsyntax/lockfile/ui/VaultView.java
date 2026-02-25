@@ -130,8 +130,7 @@ public class VaultView extends BorderPane {
             Entry selected = entryTableView.getSelectionModel().getSelectedItem();
             if (selected != null && selected.getTotpSecret() != null && !selected.getTotpSecret().isEmpty()) {
                 String totp = TOTPUtils.generateTOTP(selected.getTotpSecret());
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "TOTP: " + totp + "
-(Copied to clipboard)", ButtonType.OK);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "TOTP: " + totp + "\\n(Copied to clipboard)", ButtonType.OK);
                 ClipboardUtils.copyWithAutoClear(totp, 10);
                 alert.showAndWait();
             } else {
