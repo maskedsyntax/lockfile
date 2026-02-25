@@ -1,0 +1,282 @@
+package com.maskedsyntax.lockfile.ui;
+
+import com.maskedsyntax.lockfile.model.Entry;
+import com.maskedsyntax.lockfile.model.Folder;
+import com.maskedsyntax.lockfile.model.Vault;
+import com.maskedsyntax.lockfile.utils.ClipboardUtils;
+import com.maskedsyntax.lockfile.utils.TOTPUtils;
+import com.maskedsyntax.lockfile.utils.VaultManager;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
+import java.util.Optional;
+
+public class VaultView extends BorderPane {
+
+    private final Stage stage;
+    private final Vault vault;
+    private final File vaultFile;
+    private final String masterPassword;
+
+    private TreeView<Folder> folderTreeView;
+    private TableView<Entry> entryTableView;
+    private ObservableList<Entry> currentEntries;
+    private Folder currentFolder = null;
+
+    public VaultView(Stage stage, Vault vault, File vaultFile, String masterPassword) {
+        this.stage = stage;
+        this.vault = vault;
+        this.vaultFile = vaultFile;
+        this.masterPassword = masterPassword;
+
+        initUI();
+        loadVaultData();
+    }
+
+    private void initUI() {
+        setTop(createToolBar());
+        
+        SplitPane splitPane = new SplitPane();
+        splitPane.getItems().addAll(createFolderView(), createEntryView());
+        splitPane.setDividerPositions(0.3f);
+        setCenter(splitPane);
+    }
+
+    private ToolBar createToolBar() {
+        Button addFolderBtn = new Button("New Folder");
+        Button addEntryBtn = new Button("New Entry");
+        Button editEntryBtn = new Button("Edit Entry");
+        Button deleteEntryBtn = new Button("Delete Entry");
+        Button lockBtn = new Button("Lock Vault");
+        Button exportBtn = new Button("Export JSON");
+
+        addFolderBtn.setOnAction(e -> handleAddFolder());
+        addEntryBtn.setOnAction(e -> handleAddEntry());
+        editEntryBtn.setOnAction(e -> handleEditEntry());
+        deleteEntryBtn.setOnAction(e -> handleDeleteEntry());
+        lockBtn.setOnAction(e -> handleLock());
+        exportBtn.setOnAction(e -> handleExport());
+
+        return new ToolBar(addFolderBtn, addEntryBtn, editEntryBtn, deleteEntryBtn, new Separator(), lockBtn, exportBtn);
+    }
+
+    private VBox createFolderView() {
+        VBox vbox = new VBox();
+        folderTreeView = new TreeView<>();
+        folderTreeView.setShowRoot(true);
+
+        folderTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                currentFolder = newVal.getValue();
+                updateEntryTable();
+            } else {
+                currentFolder = null;
+                currentEntries.setAll(vault.getRootEntries());
+            }
+        });
+
+        vbox.getChildren().add(folderTreeView);
+        VBox.setVgrow(folderTreeView, javafx.scene.layout.Priority.ALWAYS);
+        return vbox;
+    }
+
+    private VBox createEntryView() {
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new Insets(10));
+
+        entryTableView = new TableView<>();
+        currentEntries = FXCollections.observableArrayList();
+        entryTableView.setItems(currentEntries);
+
+        TableColumn<Entry, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+        titleCol.setPrefWidth(150);
+
+        TableColumn<Entry, String> userCol = new TableColumn<>("Username");
+        userCol.setCellValueFactory(new PropertyValueFactory<>("username"));
+        userCol.setPrefWidth(150);
+
+        entryTableView.getColumns().addAll(titleCol, userCol);
+
+        HBox actionsBox = new HBox(10);
+        Button copyUserBtn = new Button("Copy User");
+        Button copyPassBtn = new Button("Copy Password (10s)");
+        Button getTotpBtn = new Button("Get TOTP");
+
+        copyUserBtn.setOnAction(e -> {
+            Entry selected = entryTableView.getSelectionModel().getSelectedItem();
+            if (selected != null && selected.getUsername() != null) {
+                ClipboardUtils.copyWithAutoClear(selected.getUsername(), 60);
+            }
+        });
+
+        copyPassBtn.setOnAction(e -> {
+            Entry selected = entryTableView.getSelectionModel().getSelectedItem();
+            if (selected != null && selected.getPassword() != null) {
+                ClipboardUtils.copyWithAutoClear(selected.getPassword(), 10);
+            }
+        });
+
+        getTotpBtn.setOnAction(e -> {
+            Entry selected = entryTableView.getSelectionModel().getSelectedItem();
+            if (selected != null && selected.getTotpSecret() != null && !selected.getTotpSecret().isEmpty()) {
+                String totp = TOTPUtils.generateTOTP(selected.getTotpSecret());
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "TOTP: " + totp + "
+(Copied to clipboard)", ButtonType.OK);
+                ClipboardUtils.copyWithAutoClear(totp, 10);
+                alert.showAndWait();
+            } else {
+                new Alert(Alert.AlertType.WARNING, "No TOTP secret configured.", ButtonType.OK).show();
+            }
+        });
+
+        actionsBox.getChildren().addAll(copyUserBtn, copyPassBtn, getTotpBtn);
+
+        vbox.getChildren().addAll(entryTableView, actionsBox);
+        VBox.setVgrow(entryTableView, javafx.scene.layout.Priority.ALWAYS);
+        return vbox;
+    }
+
+    private void loadVaultData() {
+        Folder rootDummy = new Folder("Root");
+        TreeItem<Folder> rootItem = new TreeItem<>(rootDummy);
+        rootItem.setExpanded(true);
+
+        for (Folder f : vault.getRootFolders()) {
+            rootItem.getChildren().add(createTreeItem(f));
+        }
+        folderTreeView.setRoot(rootItem);
+        
+        currentFolder = null;
+        updateEntryTable();
+    }
+
+    private TreeItem<Folder> createTreeItem(Folder folder) {
+        TreeItem<Folder> item = new TreeItem<>(folder);
+        for (Folder child : folder.getSubFolders()) {
+            item.getChildren().add(createTreeItem(child));
+        }
+        return item;
+    }
+
+    private void updateEntryTable() {
+        if (currentFolder == null || currentFolder.getName().equals("Root")) {
+            currentEntries.setAll(vault.getRootEntries());
+        } else {
+            currentEntries.setAll(currentFolder.getEntries());
+        }
+    }
+
+    private void saveVault() {
+        try {
+            VaultManager.saveVault(vault, masterPassword, vaultFile);
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, "Failed to save vault: " + e.getMessage(), ButtonType.OK).show();
+        }
+    }
+
+    private void handleAddFolder() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("New Folder");
+        dialog.setHeaderText("Create a new folder");
+        dialog.setContentText("Folder Name:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(name -> {
+            Folder newFolder = new Folder(name);
+            TreeItem<Folder> selectedItem = folderTreeView.getSelectionModel().getSelectedItem();
+            
+            if (selectedItem == null || selectedItem.getValue().getName().equals("Root")) {
+                vault.getRootFolders().add(newFolder);
+                folderTreeView.getRoot().getChildren().add(new TreeItem<>(newFolder));
+            } else {
+                selectedItem.getValue().getSubFolders().add(newFolder);
+                selectedItem.getChildren().add(new TreeItem<>(newFolder));
+            }
+            saveVault();
+        });
+    }
+
+    private void handleAddEntry() {
+        EntryDialog dialog = new EntryDialog(null);
+        Optional<Entry> result = dialog.showAndWait();
+        result.ifPresent(entry -> {
+            if (currentFolder == null || currentFolder.getName().equals("Root")) {
+                vault.getRootEntries().add(entry);
+            } else {
+                currentFolder.getEntries().add(entry);
+            }
+            saveVault();
+            updateEntryTable();
+        });
+    }
+
+    private void handleEditEntry() {
+        Entry selected = entryTableView.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+
+        EntryDialog dialog = new EntryDialog(selected);
+        Optional<Entry> result = dialog.showAndWait();
+        result.ifPresent(entry -> {
+            selected.setTitle(entry.getTitle());
+            selected.setUsername(entry.getUsername());
+            selected.setPassword(entry.getPassword());
+            selected.setUrl(entry.getUrl());
+            selected.setTotpSecret(entry.getTotpSecret());
+            selected.setNotes(entry.getNotes());
+            selected.setUpdatedAt(System.currentTimeMillis());
+            
+            saveVault();
+            entryTableView.refresh();
+        });
+    }
+
+    private void handleDeleteEntry() {
+        Entry selected = entryTableView.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Delete entry " + selected.getTitle() + "?", ButtonType.YES, ButtonType.NO);
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.YES) {
+                if (currentFolder == null || currentFolder.getName().equals("Root")) {
+                    vault.getRootEntries().remove(selected);
+                } else {
+                    currentFolder.getEntries().remove(selected);
+                }
+                saveVault();
+                updateEntryTable();
+            }
+        });
+    }
+
+    private void handleLock() {
+        stage.setScene(new LoginView(stage).getScene());
+    }
+
+    private void handleExport() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Vault (Encrypted JSON)");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+        File file = fileChooser.showSaveDialog(stage);
+        
+        if (file != null) {
+            try {
+                // To safely export, we could export raw JSON (unencrypted) or just copy the file.
+                // For "encrypted JSON", we can just export a copy of the vault file.
+                VaultManager.saveVault(vault, masterPassword, file);
+                new Alert(Alert.AlertType.INFORMATION, "Export successful", ButtonType.OK).show();
+            } catch (Exception e) {
+                new Alert(Alert.AlertType.ERROR, "Export failed: " + e.getMessage(), ButtonType.OK).show();
+            }
+        }
+    }
+}
