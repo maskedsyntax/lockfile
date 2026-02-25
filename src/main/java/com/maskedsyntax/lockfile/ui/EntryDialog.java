@@ -3,7 +3,7 @@ package com.maskedsyntax.lockfile.ui;
 import com.maskedsyntax.lockfile.model.Entry;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 
 public class EntryDialog extends Dialog<Entry> {
 
@@ -16,36 +16,39 @@ public class EntryDialog extends Dialog<Entry> {
 
     public EntryDialog(Entry existingEntry) {
         setTitle(existingEntry == null ? "New Entry" : "Edit Entry");
-        setHeaderText("Fill in the credential details below");
+        setHeaderText(null);
+
+        // Apply style to dialog pane
+        DialogPane dialogPane = getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+        dialogPane.getStyleClass().add("entry-dialog");
 
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
-        getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+        dialogPane.getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(20));
+        content.setPrefWidth(450);
 
-        grid.add(new Label("Title:"), 0, 0);
-        grid.add(titleField, 1, 0);
+        Label header = new Label(existingEntry == null ? "Create New Credential" : "Edit Credential");
+        header.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        grid.add(new Label("Username:"), 0, 1);
-        grid.add(usernameField, 1, 1);
+        content.getChildren().add(header);
+        content.getChildren().add(createFieldBlock("TITLE", titleField, "e.g. GitHub, Banking, etc."));
+        content.getChildren().add(createFieldBlock("USERNAME", usernameField, "Email or username"));
+        content.getChildren().add(createFieldBlock("PASSWORD", passwordField, "Secret passphrase"));
+        content.getChildren().add(createFieldBlock("URL", urlField, "https://example.com"));
+        content.getChildren().add(createFieldBlock("TOTP SECRET", totpField, "Base32 secret (optional)"));
+        
+        VBox notesBlock = new VBox(5);
+        Label notesLabel = new Label("NOTES");
+        notesLabel.setStyle("-fx-text-fill: #888; -fx-font-size: 10px; -fx-font-weight: bold;");
+        notesArea.setPrefRowCount(4);
+        notesArea.setWrapText(true);
+        notesBlock.getChildren().addAll(notesLabel, notesArea);
+        content.getChildren().add(notesBlock);
 
-        grid.add(new Label("Password:"), 0, 2);
-        grid.add(passwordField, 1, 2);
-
-        grid.add(new Label("URL:"), 0, 3);
-        grid.add(urlField, 1, 3);
-
-        grid.add(new Label("TOTP Secret:"), 0, 4);
-        grid.add(totpField, 1, 4);
-
-        grid.add(new Label("Notes:"), 0, 5);
-        notesArea.setPrefRowCount(3);
-        grid.add(notesArea, 1, 5);
-
-        getDialogPane().setContent(grid);
+        dialogPane.setContent(content);
 
         if (existingEntry != null) {
             titleField.setText(existingEntry.getTitle());
@@ -58,16 +61,28 @@ public class EntryDialog extends Dialog<Entry> {
 
         setResultConverter(dialogButton -> {
             if (dialogButton == saveButtonType) {
-                Entry entry = new Entry();
+                Entry entry = (existingEntry != null) ? existingEntry : new Entry();
                 entry.setTitle(titleField.getText());
                 entry.setUsername(usernameField.getText());
                 entry.setPassword(passwordField.getText());
                 entry.setUrl(urlField.getText());
                 entry.setTotpSecret(totpField.getText());
                 entry.setNotes(notesArea.getText());
+                entry.setUpdatedAt(System.currentTimeMillis());
                 return entry;
             }
             return null;
         });
+    }
+
+    private VBox createFieldBlock(String labelText, Control field, String prompt) {
+        VBox block = new VBox(5);
+        Label label = new Label(labelText);
+        label.setStyle("-fx-text-fill: #888; -fx-font-size: 10px; -fx-font-weight: bold;");
+        
+        if (field instanceof TextField tf) tf.setPromptText(prompt);
+        
+        block.getChildren().addAll(label, field);
+        return block;
     }
 }
