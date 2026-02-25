@@ -59,6 +59,10 @@ public class VaultView extends BorderPane {
         Button lockBtn = new Button("Lock Vault");
         Button exportBtn = new Button("Export JSON");
 
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search entries...");
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> handleSearch(newVal));
+
         addFolderBtn.setOnAction(e -> handleAddFolder());
         addEntryBtn.setOnAction(e -> handleAddEntry());
         editEntryBtn.setOnAction(e -> handleEditEntry());
@@ -66,7 +70,28 @@ public class VaultView extends BorderPane {
         lockBtn.setOnAction(e -> handleLock());
         exportBtn.setOnAction(e -> handleExport());
 
-        return new ToolBar(addFolderBtn, addEntryBtn, editEntryBtn, deleteEntryBtn, new Separator(), lockBtn, exportBtn);
+        return new ToolBar(addFolderBtn, addEntryBtn, editEntryBtn, deleteEntryBtn, new Separator(), searchField, new Separator(), lockBtn, exportBtn);
+    }
+
+    private void handleSearch(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            updateEntryTable();
+            return;
+        }
+        
+        String lowerQuery = query.toLowerCase();
+        ObservableList<Entry> filteredList = FXCollections.observableArrayList();
+        
+        java.util.List<Entry> sourceList = (currentFolder == null || currentFolder.getName().equals("Root")) ? vault.getRootEntries() : currentFolder.getEntries();
+        
+        for (Entry e : sourceList) {
+            if ((e.getTitle() != null && e.getTitle().toLowerCase().contains(lowerQuery)) ||
+                (e.getUsername() != null && e.getUsername().toLowerCase().contains(lowerQuery)) ||
+                (e.getUrl() != null && e.getUrl().toLowerCase().contains(lowerQuery))) {
+                filteredList.add(e);
+            }
+        }
+        currentEntries.setAll(filteredList);
     }
 
     private VBox createFolderView() {

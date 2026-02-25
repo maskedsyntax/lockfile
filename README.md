@@ -7,6 +7,7 @@ A fully offline credential vault with strong encryption, built with Java and Jav
 - AES-GCM encryption for entries.
 - Master-password derivation using PBKDF2 via Java Cryptography Extension (JCE).
 - Hierarchical folders.
+- Search entries by title, username, or URL.
 - Clipboard integration with auto-clear.
 - Import/export of encrypted JSON.
 - Built-in TOTP generator (GUI-based).
