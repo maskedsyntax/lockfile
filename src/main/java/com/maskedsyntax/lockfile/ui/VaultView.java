@@ -17,6 +17,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
 import java.util.Optional;
@@ -56,15 +57,15 @@ public class VaultView extends BorderPane {
     }
 
     private ToolBar createToolBar() {
-        Button addFolderBtn = new Button("📂 New Folder");
-        Button addEntryBtn = new Button("➕ New Entry");
-        Button editEntryBtn = new Button("📝 Edit");
-        Button deleteEntryBtn = new Button("🗑️ Delete");
-        Button lockBtn = new Button("🔒 Lock");
-        Button exportBtn = new Button("📤 Export");
+        Button addFolderBtn = new Button("New Folder", new FontIcon("fth-folder-plus"));
+        Button addEntryBtn = new Button("New Entry", new FontIcon("fth-plus-circle"));
+        Button editEntryBtn = new Button("Edit", new FontIcon("fth-edit"));
+        Button deleteEntryBtn = new Button("Delete", new FontIcon("fth-trash-2"));
+        Button lockBtn = new Button("Lock", new FontIcon("fth-lock"));
+        Button exportBtn = new Button("Export", new FontIcon("fth-download"));
 
         TextField searchField = new TextField();
-        searchField.setPromptText("🔍 Search entries...");
+        searchField.setPromptText("Search entries...");
         searchField.setPrefWidth(250);
         searchField.textProperty().addListener((obs, oldVal, newVal) -> handleSearch(newVal));
 
@@ -153,9 +154,9 @@ public class VaultView extends BorderPane {
         previewTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         HBox quickActions = new HBox(10);
-        Button copyUserBtn = new Button("👤 Copy User");
-        Button copyPassBtn = new Button("🔑 Copy Pass");
-        Button getTotpBtn = new Button("🕒 TOTP");
+        Button copyUserBtn = new Button("User", new FontIcon("fth-user"));
+        Button copyPassBtn = new Button("Password", new FontIcon("fth-key"));
+        Button getTotpBtn = new Button("TOTP", new FontIcon("fth-clock"));
         quickActions.getChildren().addAll(copyUserBtn, copyPassBtn, getTotpBtn);
 
         Label notesLabel = new Label();
@@ -194,6 +195,7 @@ public class VaultView extends BorderPane {
                 String totp = TOTPUtils.generateTOTP(selected.getTotpSecret());
                 ClipboardUtils.copyWithAutoClear(totp, 10);
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, "TOTP: " + totp + "\n(Copied to clipboard)", ButtonType.OK);
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
                 alert.showAndWait();
             }
         });
@@ -237,7 +239,9 @@ public class VaultView extends BorderPane {
         try {
             VaultManager.saveVault(vault, masterPassword, vaultFile);
         } catch (Exception e) {
-            new Alert(Alert.AlertType.ERROR, "Failed to save vault: " + e.getMessage(), ButtonType.OK).show();
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save vault: " + e.getMessage(), ButtonType.OK);
+            alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+            alert.showAndWait();
         }
     }
 
@@ -246,6 +250,7 @@ public class VaultView extends BorderPane {
         dialog.setTitle("New Folder");
         dialog.setHeaderText("Create a new folder");
         dialog.setContentText("Folder Name:");
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
 
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(name -> {

@@ -132,8 +132,31 @@
 }
 
 /* Custom Cards/Containers */
-.entry-details-pane {
-    -fx-background-color: #1e1e1e;
-    -fx-padding: 20px;
+.dialog-pane {
+    -fx-background-color: #121212;
 }
+
+.dialog-pane > .button-bar > .container {
+    -fx-background-color: #1e1e1e;
+}
+
+.dialog-pane .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.dialog-pane .text-field {
+    -fx-background-color: #252525;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #333333;
+}
+
+.entry-dialog {
+    -fx-background-color: #121212;
+}
+
+.ikonli-font-icon {
+    -fx-icon-color: #e0e0e0;
+}
+
+
 

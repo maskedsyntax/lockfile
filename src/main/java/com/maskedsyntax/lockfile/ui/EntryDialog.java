@@ -22,6 +22,7 @@ public class EntryDialog extends Dialog<Entry> {
         DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
         dialogPane.getStyleClass().add("entry-dialog");
+        setResizable(true);
 
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
