@@ -4,12 +4,14 @@ import com.maskedsyntax.lockfile.model.Entry;
 import com.maskedsyntax.lockfile.model.Folder;
 import com.maskedsyntax.lockfile.model.Vault;
 import com.maskedsyntax.lockfile.utils.ClipboardUtils;
+import com.maskedsyntax.lockfile.utils.IdleManager;
 import com.maskedsyntax.lockfile.utils.TOTPUtils;
 import com.maskedsyntax.lockfile.utils.VaultManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
@@ -18,6 +20,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -29,6 +32,7 @@ public class VaultView extends BorderPane {
     private final Vault vault;
     private final File vaultFile;
     private final String masterPassword;
+    private final IdleManager idleManager;
 
     private TreeView<Folder> folderTreeView;
     private TableView<Entry> entryTableView;
@@ -40,6 +44,16 @@ public class VaultView extends BorderPane {
         this.vault = vault;
         this.vaultFile = vaultFile;
         this.masterPassword = masterPassword;
+
+        this.idleManager = new IdleManager(Duration.minutes(5), this::handleLock);
+
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                idleManager.start(newScene);
+            } else {
+                idleManager.stop();
+            }
+        });
 
         initUI();
         loadVaultData();
@@ -332,7 +346,16 @@ public class VaultView extends BorderPane {
     }
 
     private void handleLock() {
-        stage.setScene(new LoginView(stage).getScene());
+        LoginView loginView = new LoginView(stage);
+        Scene scene = new Scene(loginView, 500, 400);
+        try {
+            scene.getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+        } catch (Exception e) {
+            // Ignore
+        }
+        stage.setScene(scene);
+        stage.setResizable(false);
+        stage.centerOnScreen();
     }
 
     private void handleExport() {
