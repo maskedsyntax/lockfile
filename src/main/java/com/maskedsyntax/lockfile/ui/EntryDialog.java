@@ -2,6 +2,7 @@ package com.maskedsyntax.lockfile.ui;
 
 import com.maskedsyntax.lockfile.model.Entry;
 import com.maskedsyntax.lockfile.utils.PasswordGenerator;
+import com.maskedsyntax.lockfile.utils.PasswordStrengthChecker;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -81,6 +82,24 @@ public class EntryDialog extends Dialog<Entry> {
         
         passHBox.getChildren().addAll(passwordField, plainPasswordField, toggleBtn, generateBtn);
         passBlock.getChildren().addAll(passLabel, passHBox);
+
+        // Strength Meter
+        HBox strengthHBox = new HBox(5);
+        ProgressBar strengthBar = new ProgressBar(0);
+        strengthBar.setPrefWidth(200);
+        Label strengthLabel = new Label("Strength");
+        strengthLabel.setStyle("-fx-text-fill: #888; -fx-font-size: 10px;");
+        strengthHBox.getChildren().addAll(strengthBar, strengthLabel);
+        passBlock.getChildren().add(strengthHBox);
+
+        passwordField.textProperty().addListener((obs, oldVal, newVal) -> {
+            PasswordStrengthChecker.Strength strength = PasswordStrengthChecker.calculateStrength(newVal);
+            strengthBar.setProgress(strength.value);
+            strengthBar.setStyle("-fx-accent: " + strength.color + ";");
+            strengthLabel.setText(strength.label);
+            strengthLabel.setStyle("-fx-text-fill: " + strength.color + "; -fx-font-size: 10px;");
+        });
+
         content.getChildren().add(passBlock);
 
         content.getChildren().add(createFieldBlock("URL", urlField, "https://example.com"));
@@ -103,6 +122,13 @@ public class EntryDialog extends Dialog<Entry> {
             urlField.setText(existingEntry.getUrl());
             totpField.setText(existingEntry.getTotpSecret());
             notesArea.setText(existingEntry.getNotes());
+            
+            // Trigger strength update for existing password
+            PasswordStrengthChecker.Strength strength = PasswordStrengthChecker.calculateStrength(existingEntry.getPassword());
+            strengthBar.setProgress(strength.value);
+            strengthBar.setStyle("-fx-accent: " + strength.color + ";");
+            strengthLabel.setText(strength.label);
+            strengthLabel.setStyle("-fx-text-fill: " + strength.color + "; -fx-font-size: 10px;");
         }
 
         setResultConverter(dialogButton -> {

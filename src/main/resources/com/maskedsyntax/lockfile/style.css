@@ -169,6 +169,21 @@
     -fx-background-color: #121212;
 }
 
+.progress-bar {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-padding: 0;
+}
+
+.progress-bar > .track {
+    -fx-background-color: #252525;
+    -fx-background-radius: 4px;
+}
+
+.progress-bar > .bar {
+    -fx-background-radius: 4px;
+}
+
 .ikonli-font-icon {
     -fx-icon-color: #e0e0e0;
 }
