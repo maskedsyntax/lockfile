@@ -1,9 +1,13 @@
 package com.maskedsyntax.lockfile.ui;
 
 import com.maskedsyntax.lockfile.model.Entry;
+import com.maskedsyntax.lockfile.utils.PasswordGenerator;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 public class EntryDialog extends Dialog<Entry> {
 
@@ -37,7 +41,48 @@ public class EntryDialog extends Dialog<Entry> {
         content.getChildren().add(header);
         content.getChildren().add(createFieldBlock("TITLE", titleField, "e.g. GitHub, Banking, etc."));
         content.getChildren().add(createFieldBlock("USERNAME", usernameField, "Email or username"));
-        content.getChildren().add(createFieldBlock("PASSWORD", passwordField, "Secret passphrase"));
+
+        // Custom Password Field with Generate Button
+        VBox passBlock = new VBox(5);
+        Label passLabel = new Label("PASSWORD");
+        passLabel.setStyle("-fx-text-fill: #888; -fx-font-size: 10px; -fx-font-weight: bold;");
+        
+        HBox passHBox = new HBox(5);
+        passwordField.setPromptText("Secret passphrase");
+        HBox.setHgrow(passwordField, Priority.ALWAYS);
+
+        TextField plainPasswordField = new TextField();
+        plainPasswordField.setPromptText("Secret passphrase");
+        plainPasswordField.setManaged(false);
+        plainPasswordField.setVisible(false);
+        HBox.setHgrow(plainPasswordField, Priority.ALWAYS);
+
+        // Bind text properties so they stay in sync
+        plainPasswordField.textProperty().bindBidirectional(passwordField.textProperty());
+
+        Button toggleBtn = new Button("", new FontIcon("fth-eye"));
+        toggleBtn.setOnAction(e -> {
+            boolean isVisible = plainPasswordField.isVisible();
+            plainPasswordField.setVisible(!isVisible);
+            plainPasswordField.setManaged(!isVisible);
+            passwordField.setVisible(isVisible);
+            passwordField.setManaged(isVisible);
+            toggleBtn.setGraphic(new FontIcon(isVisible ? "fth-eye" : "fth-eye-off"));
+        });
+        
+        Button generateBtn = new Button("Generate", new FontIcon("fth-refresh-cw"));
+        generateBtn.setOnAction(e -> {
+            String newPassword = PasswordGenerator.generatePassword(16);
+            passwordField.setText(newPassword);
+            if (!plainPasswordField.isVisible()) {
+                toggleBtn.fire(); // Show password automatically when generated
+            }
+        });
+        
+        passHBox.getChildren().addAll(passwordField, plainPasswordField, toggleBtn, generateBtn);
+        passBlock.getChildren().addAll(passLabel, passHBox);
+        content.getChildren().add(passBlock);
+
         content.getChildren().add(createFieldBlock("URL", urlField, "https://example.com"));
         content.getChildren().add(createFieldBlock("TOTP SECRET", totpField, "Base32 secret (optional)"));
         
