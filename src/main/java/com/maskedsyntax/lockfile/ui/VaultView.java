@@ -6,6 +6,7 @@ import com.maskedsyntax.lockfile.model.Entry;
 import com.maskedsyntax.lockfile.model.Folder;
 import com.maskedsyntax.lockfile.model.PasswordRecord;
 import com.maskedsyntax.lockfile.model.Vault;
+import com.maskedsyntax.lockfile.utils.CSVImporter;
 import com.maskedsyntax.lockfile.utils.ClipboardUtils;
 import com.maskedsyntax.lockfile.utils.FaviconManager;
 import com.maskedsyntax.lockfile.utils.HIBPChecker;
@@ -36,6 +37,7 @@ import javafx.scene.input.KeyCombination;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 public class VaultView extends BorderPane {
@@ -105,7 +107,9 @@ public class VaultView extends BorderPane {
         changePassItem.setOnAction(e -> handleChangeMasterPassword());
         MenuItem appSettingsItem = new MenuItem("Application Settings", new FontIcon("fth-sliders"));
         appSettingsItem.setOnAction(e -> handleAppSettings());
-        settingsBtn.getItems().addAll(changePassItem, appSettingsItem);
+        MenuItem importCsvItem = new MenuItem("Import from CSV", new FontIcon("fth-upload"));
+        importCsvItem.setOnAction(e -> handleImportCSV());
+        settingsBtn.getItems().addAll(changePassItem, appSettingsItem, new SeparatorMenuItem(), importCsvItem);
 
         Button lockBtn = new Button("Lock", new FontIcon("fth-lock"));
         Button exportBtn = new Button("Export", new FontIcon("fth-download"));
@@ -494,6 +498,40 @@ public class VaultView extends BorderPane {
             alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
             alert.showAndWait();
         });
+    }
+
+    private void handleImportCSV() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Import from CSV");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        File file = fileChooser.showOpenDialog(stage);
+        if (file != null) {
+            try {
+                List<Entry> importedEntries = CSVImporter.importFromCSV(file);
+                if (importedEntries.isEmpty()) {
+                    Alert alert = new Alert(Alert.AlertType.WARNING, "No entries found in CSV.", ButtonType.OK);
+                    alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+                    alert.showAndWait();
+                    return;
+                }
+
+                if (currentFolder == null || currentFolder.getName().equals("Root")) {
+                    vault.getRootEntries().addAll(importedEntries);
+                } else {
+                    currentFolder.getEntries().addAll(importedEntries);
+                }
+                saveVault();
+                updateEntryTable();
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Successfully imported " + importedEntries.size() + " entries.", ButtonType.OK);
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+                alert.showAndWait();
+            } catch (Exception e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to import CSV: " + e.getMessage(), ButtonType.OK);
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+                alert.showAndWait();
+            }
+        }
     }
 
     private void handleLock() {
