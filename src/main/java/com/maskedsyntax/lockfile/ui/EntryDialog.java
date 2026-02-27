@@ -2,8 +2,10 @@ package com.maskedsyntax.lockfile.ui;
 
 import com.maskedsyntax.lockfile.model.Attachment;
 import com.maskedsyntax.lockfile.model.Entry;
+import com.maskedsyntax.lockfile.utils.HIBPChecker;
 import com.maskedsyntax.lockfile.utils.PasswordGenerator;
 import com.maskedsyntax.lockfile.utils.PasswordStrengthChecker;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -102,12 +104,34 @@ public class EntryDialog extends Dialog<Entry> {
         strengthHBox.getChildren().addAll(strengthBar, strengthLabel);
         passBlock.getChildren().add(strengthHBox);
 
+        Label pwnedLabel = new Label();
+        pwnedLabel.setStyle("-fx-text-fill: #ff4d4d; -fx-font-size: 10px; -fx-font-weight: bold;");
+        pwnedLabel.setVisible(false);
+        pwnedLabel.setManaged(false);
+        passBlock.getChildren().add(pwnedLabel);
+
         passwordField.textProperty().addListener((obs, oldVal, newVal) -> {
             PasswordStrengthChecker.Strength strength = PasswordStrengthChecker.calculateStrength(newVal);
             strengthBar.setProgress(strength.value);
             strengthBar.setStyle("-fx-accent: " + strength.color + ";");
             strengthLabel.setText(strength.label);
             strengthLabel.setStyle("-fx-text-fill: " + strength.color + "; -fx-font-size: 10px;");
+
+            if (newVal != null && !newVal.isEmpty()) {
+                HIBPChecker.getBreachCount(newVal).thenAccept(count -> Platform.runLater(() -> {
+                    if (count > 0) {
+                        pwnedLabel.setText("⚠️ This password has appeared in " + count + " data breaches!");
+                        pwnedLabel.setVisible(true);
+                        pwnedLabel.setManaged(true);
+                    } else {
+                        pwnedLabel.setVisible(false);
+                        pwnedLabel.setManaged(false);
+                    }
+                }));
+            } else {
+                pwnedLabel.setVisible(false);
+                pwnedLabel.setManaged(false);
+            }
         });
 
         content.getChildren().add(passBlock);
@@ -157,6 +181,14 @@ public class EntryDialog extends Dialog<Entry> {
             strengthBar.setStyle("-fx-accent: " + strength.color + ";");
             strengthLabel.setText(strength.label);
             strengthLabel.setStyle("-fx-text-fill: " + strength.color + "; -fx-font-size: 10px;");
+
+            HIBPChecker.getBreachCount(existingEntry.getPassword()).thenAccept(count -> Platform.runLater(() -> {
+                if (count > 0) {
+                    pwnedLabel.setText("⚠️ This password has appeared in " + count + " data breaches!");
+                    pwnedLabel.setVisible(true);
+                    pwnedLabel.setManaged(true);
+                }
+            }));
         }
 
         setResultConverter(dialogButton -> {

@@ -7,6 +7,7 @@ import com.maskedsyntax.lockfile.model.PasswordRecord;
 import com.maskedsyntax.lockfile.model.Vault;
 import com.maskedsyntax.lockfile.utils.ClipboardUtils;
 import com.maskedsyntax.lockfile.utils.FaviconManager;
+import com.maskedsyntax.lockfile.utils.HIBPChecker;
 import com.maskedsyntax.lockfile.utils.IdleManager;
 import com.maskedsyntax.lockfile.utils.TOTPUtils;
 import com.maskedsyntax.lockfile.utils.VaultManager;
@@ -209,9 +210,16 @@ public class VaultView extends BorderPane {
         ImageView previewIcon = new ImageView();
         previewIcon.setFitWidth(32);
         previewIcon.setFitHeight(32);
-        Label previewTitle = new Label("Entry Details");
+        Label previewTitle = new Label("Select an entry");
         previewTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
-        headerBox.getChildren().addAll(previewIcon, previewTitle);
+        
+        Label breachWarning = new Label();
+        breachWarning.setStyle("-fx-text-fill: #ff4d4d; -fx-font-size: 11px; -fx-font-weight: bold;");
+        breachWarning.setVisible(false);
+        breachWarning.setManaged(false);
+
+        VBox headerText = new VBox(2, previewTitle, breachWarning);
+        headerBox.getChildren().addAll(previewIcon, headerText);
 
         HBox quickActions = new HBox(10);
         Button copyUserBtn = new Button("User", new FontIcon("fth-user"));
@@ -261,6 +269,17 @@ public class VaultView extends BorderPane {
                     attachmentList.getChildren().add(row);
                 }
                 attachmentsBox.setVisible(!newVal.getAttachments().isEmpty());
+
+                HIBPChecker.getBreachCount(newVal.getPassword()).thenAccept(count -> Platform.runLater(() -> {
+                    if (count > 0) {
+                        breachWarning.setText("⚠️ COMPROMISED: Found in " + count + " breaches!");
+                        breachWarning.setVisible(true);
+                        breachWarning.setManaged(true);
+                    } else {
+                        breachWarning.setVisible(false);
+                        breachWarning.setManaged(false);
+                    }
+                }));
             } else {
                 previewTitle.setText("Select an entry");
                 previewIcon.setImage(null);
@@ -268,6 +287,8 @@ public class VaultView extends BorderPane {
                 historyBtn.setDisable(true);
                 attachmentList.getChildren().clear();
                 attachmentsBox.setVisible(false);
+                breachWarning.setVisible(false);
+                breachWarning.setManaged(false);
             }
         });
 
