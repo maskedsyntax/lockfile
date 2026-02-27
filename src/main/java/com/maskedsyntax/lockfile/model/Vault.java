@@ -7,6 +7,7 @@ public class Vault {
     private String version = "1.0";
     private List<Folder> rootFolders = new ArrayList<>();
     private List<Entry> rootEntries = new ArrayList<>();
+    private Settings settings = new Settings();
 
     public Vault() {
     }
@@ -19,4 +20,7 @@ public class Vault {
 
     public List<Entry> getRootEntries() { return rootEntries; }
     public void setRootEntries(List<Entry> rootEntries) { this.rootEntries = rootEntries; }
+
+    public Settings getSettings() { return settings; }
+    public void setSettings(Settings settings) { this.settings = settings; }
 }

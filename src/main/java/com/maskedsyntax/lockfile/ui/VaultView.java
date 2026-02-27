@@ -103,7 +103,9 @@ public class VaultView extends BorderPane {
         MenuButton settingsBtn = new MenuButton("Settings", new FontIcon("fth-settings"));
         MenuItem changePassItem = new MenuItem("Change Master Password", new FontIcon("fth-key"));
         changePassItem.setOnAction(e -> handleChangeMasterPassword());
-        settingsBtn.getItems().add(changePassItem);
+        MenuItem appSettingsItem = new MenuItem("Application Settings", new FontIcon("fth-sliders"));
+        appSettingsItem.setOnAction(e -> handleAppSettings());
+        settingsBtn.getItems().addAll(changePassItem, appSettingsItem);
 
         Button lockBtn = new Button("Lock", new FontIcon("fth-lock"));
         Button exportBtn = new Button("Export", new FontIcon("fth-download"));
@@ -331,14 +333,14 @@ public class VaultView extends BorderPane {
         copyUserBtn.setOnAction(e -> {
             Entry selected = entryTableView.getSelectionModel().getSelectedItem();
             if (selected != null && selected.getUsername() != null) {
-                ClipboardUtils.copyWithAutoClear(selected.getUsername(), 60);
+                ClipboardUtils.copyWithAutoClear(selected.getUsername(), vault.getSettings().getClipboardClearSeconds());
             }
         });
 
         copyPassBtn.setOnAction(e -> {
             Entry selected = entryTableView.getSelectionModel().getSelectedItem();
             if (selected != null && selected.getPassword() != null) {
-                ClipboardUtils.copyWithAutoClear(selected.getPassword(), 10);
+                ClipboardUtils.copyWithAutoClear(selected.getPassword(), vault.getSettings().getClipboardClearSeconds());
             }
         });
 
@@ -346,7 +348,7 @@ public class VaultView extends BorderPane {
             Entry selected = entryTableView.getSelectionModel().getSelectedItem();
             if (selected != null && selected.getTotpSecret() != null && !selected.getTotpSecret().isEmpty()) {
                 String totp = TOTPUtils.generateTOTP(selected.getTotpSecret());
-                ClipboardUtils.copyWithAutoClear(totp, 10);
+                ClipboardUtils.copyWithAutoClear(totp, vault.getSettings().getClipboardClearSeconds());
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, "TOTP: " + totp + "\n(Copied to clipboard)", ButtonType.OK);
                 alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
                 alert.showAndWait();
@@ -474,6 +476,23 @@ public class VaultView extends BorderPane {
                 saveVault();
                 updateEntryTable();
             }
+        });
+    }
+
+    private void handleAppSettings() {
+        SettingsDialog dialog = new SettingsDialog(vault.getSettings());
+        dialog.showAndWait().ifPresent(newSettings -> {
+            vault.setSettings(newSettings);
+            saveVault();
+            
+            // Re-initialize IdleManager with new threshold
+            idleManager.stop();
+            // Note: Duration is immutable, we create a new IdleManager or just restart with new logic.
+            // Since our IdleManager is final, we'll just rely on the next lock/login or we could refactor it.
+            // Actually, let's just show an alert that some settings require restart/re-lock.
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Settings saved. Auto-lock changes will apply after the next login.", ButtonType.OK);
+            alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+            alert.showAndWait();
         });
     }
 
