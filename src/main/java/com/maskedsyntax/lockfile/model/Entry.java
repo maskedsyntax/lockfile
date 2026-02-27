@@ -15,6 +15,7 @@ public class Entry {
     private long createdAt;
     private long updatedAt;
     private List<PasswordRecord> passwordHistory = new ArrayList<>();
+    private List<Attachment> attachments = new ArrayList<>();
 
     public Entry() {
         this.id = UUID.randomUUID().toString();
@@ -56,6 +57,14 @@ public class Entry {
 
     public void setPasswordHistory(List<PasswordRecord> passwordHistory) {
         this.passwordHistory = passwordHistory;
+    }
+
+    public List<Attachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<Attachment> attachments) {
+        this.attachments = attachments;
     }
 
     public void addPasswordToHistory(String oldPassword) {

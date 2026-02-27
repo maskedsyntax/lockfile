@@ -1,5 +1,6 @@
 package com.maskedsyntax.lockfile.ui;
 
+import com.maskedsyntax.lockfile.model.Attachment;
 import com.maskedsyntax.lockfile.model.Entry;
 import com.maskedsyntax.lockfile.model.Folder;
 import com.maskedsyntax.lockfile.model.PasswordRecord;
@@ -21,6 +22,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -222,7 +224,18 @@ public class VaultView extends BorderPane {
         notesLabel.setWrapText(true);
         notesLabel.setStyle("-fx-text-fill: #aaa; -fx-font-size: 13px;");
 
-        previewPane.getChildren().addAll(headerBox, quickActions, notesLabel);
+        VBox attachmentsBox = new VBox(5);
+        Label attachmentsTitle = new Label("ATTACHMENTS");
+        attachmentsTitle.setStyle("-fx-text-fill: #888; -fx-font-size: 10px; -fx-font-weight: bold;");
+        VBox attachmentList = new VBox(5);
+        attachmentsBox.getChildren().addAll(attachmentsTitle, attachmentList);
+
+        VBox previewContent = new VBox(15, headerBox, quickActions, notesLabel, attachmentsBox);
+        ScrollPane previewScroll = new ScrollPane(previewContent);
+        previewScroll.setFitToWidth(true);
+        previewScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        
+        previewPane.getChildren().add(previewScroll);
 
         entryTableView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
@@ -232,11 +245,29 @@ public class VaultView extends BorderPane {
                     Platform.runLater(() -> previewIcon.setImage(img))
                 );
                 historyBtn.setDisable(newVal.getPasswordHistory().isEmpty());
+                
+                attachmentList.getChildren().clear();
+                for (Attachment att : newVal.getAttachments()) {
+                    HBox row = new HBox(10);
+                    row.setAlignment(Pos.CENTER_LEFT);
+                    row.setStyle("-fx-padding: 5; -fx-background-color: #252525; -fx-background-radius: 4;");
+                    Label name = new Label(att.getFileName());
+                    name.setStyle("-fx-text-fill: white;");
+                    HBox.setHgrow(name, Priority.ALWAYS);
+                    Button downloadBtn = new Button("", new FontIcon("fth-download"));
+                    downloadBtn.setStyle("-fx-background-color: transparent;");
+                    downloadBtn.setOnAction(e -> handleDownloadAttachment(att));
+                    row.getChildren().addAll(new FontIcon("fth-file"), name, downloadBtn);
+                    attachmentList.getChildren().add(row);
+                }
+                attachmentsBox.setVisible(!newVal.getAttachments().isEmpty());
             } else {
                 previewTitle.setText("Select an entry");
                 previewIcon.setImage(null);
                 notesLabel.setText("");
                 historyBtn.setDisable(true);
+                attachmentList.getChildren().clear();
+                attachmentsBox.setVisible(false);
             }
         });
 
@@ -415,6 +446,25 @@ public class VaultView extends BorderPane {
         stage.setScene(scene);
         stage.setResizable(false);
         stage.centerOnScreen();
+    }
+
+    private void handleDownloadAttachment(Attachment att) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Attachment");
+        fileChooser.setInitialFileName(att.getFileName());
+        File file = fileChooser.showSaveDialog(stage);
+        if (file != null) {
+            try {
+                java.nio.file.Files.write(file.toPath(), att.getData());
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Attachment saved successfully.", ButtonType.OK);
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+                alert.showAndWait();
+            } catch (Exception e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save attachment.", ButtonType.OK);
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+                alert.showAndWait();
+            }
+        }
     }
 
     private void handleExport() {
