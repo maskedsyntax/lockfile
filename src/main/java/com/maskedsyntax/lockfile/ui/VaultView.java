@@ -4,9 +4,11 @@ import com.maskedsyntax.lockfile.model.Entry;
 import com.maskedsyntax.lockfile.model.Folder;
 import com.maskedsyntax.lockfile.model.Vault;
 import com.maskedsyntax.lockfile.utils.ClipboardUtils;
+import com.maskedsyntax.lockfile.utils.FaviconManager;
 import com.maskedsyntax.lockfile.utils.IdleManager;
 import com.maskedsyntax.lockfile.utils.TOTPUtils;
 import com.maskedsyntax.lockfile.utils.VaultManager;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -14,6 +16,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -160,13 +164,36 @@ public class VaultView extends BorderPane {
         currentEntries = FXCollections.observableArrayList();
         entryTableView.setItems(currentEntries);
 
+        TableColumn<Entry, String> iconCol = new TableColumn<>("");
+        iconCol.setPrefWidth(40);
+        iconCol.setCellFactory(column -> new TableCell<>() {
+            private final ImageView iv = new ImageView();
+            {
+                iv.setFitWidth(16);
+                iv.setFitHeight(16);
+                setGraphic(iv);
+            }
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    iv.setImage(null);
+                } else {
+                    Entry entry = (Entry) getTableRow().getItem();
+                    FaviconManager.getFavicon(entry.getUrl()).thenAccept(img -> 
+                        Platform.runLater(() -> iv.setImage(img))
+                    );
+                }
+            }
+        });
+
         TableColumn<Entry, String> titleCol = new TableColumn<>("TITLE");
         titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
         
         TableColumn<Entry, String> userCol = new TableColumn<>("USERNAME");
         userCol.setCellValueFactory(new PropertyValueFactory<>("username"));
 
-        entryTableView.getColumns().addAll(titleCol, userCol);
+        entryTableView.getColumns().addAll(iconCol, titleCol, userCol);
 
         // Preview Area
         VBox previewPane = new VBox(15);
@@ -174,8 +201,14 @@ public class VaultView extends BorderPane {
         previewPane.setStyle("-fx-background-color: #1e1e1e; -fx-border-color: #2d2d2d; -fx-border-width: 1 0 0 0;");
         previewPane.setPrefHeight(250);
 
+        HBox headerBox = new HBox(15);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+        ImageView previewIcon = new ImageView();
+        previewIcon.setFitWidth(32);
+        previewIcon.setFitHeight(32);
         Label previewTitle = new Label("Entry Details");
         previewTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        headerBox.getChildren().addAll(previewIcon, previewTitle);
 
         HBox quickActions = new HBox(10);
         Button copyUserBtn = new Button("User", new FontIcon("fth-user"));
@@ -187,14 +220,18 @@ public class VaultView extends BorderPane {
         notesLabel.setWrapText(true);
         notesLabel.setStyle("-fx-text-fill: #aaa; -fx-font-size: 13px;");
 
-        previewPane.getChildren().addAll(previewTitle, quickActions, notesLabel);
+        previewPane.getChildren().addAll(headerBox, quickActions, notesLabel);
 
         entryTableView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 previewTitle.setText(newVal.getTitle());
                 notesLabel.setText(newVal.getNotes() != null && !newVal.getNotes().isEmpty() ? newVal.getNotes() : "No notes available.");
+                FaviconManager.getFavicon(newVal.getUrl()).thenAccept(img -> 
+                    Platform.runLater(() -> previewIcon.setImage(img))
+                );
             } else {
                 previewTitle.setText("Select an entry");
+                previewIcon.setImage(null);
                 notesLabel.setText("");
             }
         });
