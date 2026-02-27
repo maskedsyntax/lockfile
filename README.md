@@ -21,15 +21,34 @@ If a service offers 2FA via an app (like Google Authenticator), you can save the
 - Fully offline functionality.
 - AES-GCM encryption for entries.
 - Master-password derivation using PBKDF2 via Java Cryptography Extension (JCE).
-- Hierarchical folders.
+- Hierarchical folders and collections.
 - Search entries by title, username, or URL.
 - Clipboard integration with auto-clear.
 - Import/export of encrypted JSON.
 - Built-in TOTP generator (GUI-based).
 - Password history tracking and revert.
 - Automatic timestamped backups.
-- Modern high-contrast dark theme.
+- Secure file attachments.
+- Compromised password check (via Have I Been Pwned API).
+- Real-time password strength meter.
+- Modern high-contrast dark theme with Feather icons.
 - Cross-platform support (Linux, macOS, Windows).
+
+## Roadmap
+### Phase 1: Production Hardening
+- [x] Unit Tests for Cryptography (Ensuring security integrity)
+- [ ] Change Master Password (Re-encryption logic)
+- [ ] Secure Memory Handling (Zeroing sensitive data)
+
+### Phase 2: Power-User Features
+- [ ] Keyboard Shortcuts (Quick navigation)
+- [ ] Settings Screen (Customizable thresholds)
+- [ ] Import from CSV (Migration tool)
+
+### Phase 3: Final UX Polish
+- [ ] System Tray Integration (Background activity)
+- [ ] Custom Application Icon
+- [ ] Entry Sorting (Title, Date modified)
 
 ## Tech Stack
 - Java 25+ (OpenJDK)
