@@ -1,5 +1,7 @@
 package com.maskedsyntax.lockfile.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class Entry {
@@ -12,6 +14,7 @@ public class Entry {
     private String notes;
     private long createdAt;
     private long updatedAt;
+    private List<PasswordRecord> passwordHistory = new ArrayList<>();
 
     public Entry() {
         this.id = UUID.randomUUID().toString();
@@ -46,4 +49,18 @@ public class Entry {
     
     public long getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+
+    public List<PasswordRecord> getPasswordHistory() {
+        return passwordHistory;
+    }
+
+    public void setPasswordHistory(List<PasswordRecord> passwordHistory) {
+        this.passwordHistory = passwordHistory;
+    }
+
+    public void addPasswordToHistory(String oldPassword) {
+        if (oldPassword != null && !oldPassword.isEmpty()) {
+            passwordHistory.add(new PasswordRecord(oldPassword, System.currentTimeMillis()));
+        }
+    }
 }

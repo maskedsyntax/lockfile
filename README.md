@@ -26,6 +26,7 @@ If a service offers 2FA via an app (like Google Authenticator), you can save the
 - Clipboard integration with auto-clear.
 - Import/export of encrypted JSON.
 - Built-in TOTP generator (GUI-based).
+- Password history tracking and revert.
 - Modern high-contrast dark theme.
 - Cross-platform support (Linux, macOS, Windows).
 

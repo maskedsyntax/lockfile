@@ -2,6 +2,7 @@ package com.maskedsyntax.lockfile.ui;
 
 import com.maskedsyntax.lockfile.model.Entry;
 import com.maskedsyntax.lockfile.model.Folder;
+import com.maskedsyntax.lockfile.model.PasswordRecord;
 import com.maskedsyntax.lockfile.model.Vault;
 import com.maskedsyntax.lockfile.utils.ClipboardUtils;
 import com.maskedsyntax.lockfile.utils.FaviconManager;
@@ -214,7 +215,8 @@ public class VaultView extends BorderPane {
         Button copyUserBtn = new Button("User", new FontIcon("fth-user"));
         Button copyPassBtn = new Button("Password", new FontIcon("fth-key"));
         Button getTotpBtn = new Button("TOTP", new FontIcon("fth-clock"));
-        quickActions.getChildren().addAll(copyUserBtn, copyPassBtn, getTotpBtn);
+        Button historyBtn = new Button("History", new FontIcon("fth-rotate-ccw"));
+        quickActions.getChildren().addAll(copyUserBtn, copyPassBtn, getTotpBtn, historyBtn);
 
         Label notesLabel = new Label();
         notesLabel.setWrapText(true);
@@ -229,11 +231,28 @@ public class VaultView extends BorderPane {
                 FaviconManager.getFavicon(newVal.getUrl()).thenAccept(img -> 
                     Platform.runLater(() -> previewIcon.setImage(img))
                 );
+                historyBtn.setDisable(newVal.getPasswordHistory().isEmpty());
             } else {
                 previewTitle.setText("Select an entry");
                 previewIcon.setImage(null);
                 notesLabel.setText("");
+                historyBtn.setDisable(true);
             }
+        });
+
+        historyBtn.setOnAction(e -> {
+            Entry selected = entryTableView.getSelectionModel().getSelectedItem();
+            if (selected == null) return;
+            HistoryDialog dialog = new HistoryDialog(selected);
+            dialog.showAndWait().ifPresent(revertedPassword -> {
+                if (revertedPassword != null && !revertedPassword.isEmpty()) {
+                    selected.addPasswordToHistory(selected.getPassword());
+                    selected.setPassword(revertedPassword);
+                    selected.setUpdatedAt(System.currentTimeMillis());
+                    saveVault();
+                    entryTableView.refresh();
+                }
+            });
         });
 
         copyUserBtn.setOnAction(e -> {
@@ -351,6 +370,9 @@ public class VaultView extends BorderPane {
         EntryDialog dialog = new EntryDialog(selected);
         Optional<Entry> result = dialog.showAndWait();
         result.ifPresent(entry -> {
+            if (!selected.getPassword().equals(entry.getPassword())) {
+                selected.addPasswordToHistory(selected.getPassword());
+            }
             selected.setTitle(entry.getTitle());
             selected.setUsername(entry.getUsername());
             selected.setPassword(entry.getPassword());
