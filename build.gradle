@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.maskedsyntax.lockfile'
-version = '2.3-SNAPSHOT'
+version = '2.3.0'
 
 repositories {
     mavenCentral()
