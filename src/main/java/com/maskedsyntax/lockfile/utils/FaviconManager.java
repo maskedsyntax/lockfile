@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class FaviconManager {
-    private static final String CACHE_DIR = System.getProperty("user.home") + File.separator + ".lockfile" + File.separator + "cache" + File.separator + "icons";
+    private static final String CACHE_DIR = StorageUtils.getIconCacheDir();
     private static final Map<String, Image> memoryCache = new HashMap<>();
     private static final String GOOGLE_FAVICON_SERVICE = "https://www.google.com/s2/favicons?domain=%s&sz=64";
 

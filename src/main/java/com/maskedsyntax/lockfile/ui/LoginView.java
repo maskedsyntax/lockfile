@@ -1,6 +1,7 @@
 package com.maskedsyntax.lockfile.ui;
 
 import com.maskedsyntax.lockfile.model.Vault;
+import com.maskedsyntax.lockfile.utils.StorageUtils;
 import com.maskedsyntax.lockfile.utils.VaultManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -20,7 +21,7 @@ public class LoginView extends VBox {
 
     public LoginView(Stage stage) {
         this.stage = stage;
-        this.vaultFile = new File(System.getProperty("user.home"), ".lockfile.vault");
+        this.vaultFile = StorageUtils.getDefaultVaultFile();
 
         setPadding(new Insets(40));
         setSpacing(20);

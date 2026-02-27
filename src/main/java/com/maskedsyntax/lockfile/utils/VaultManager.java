@@ -19,7 +19,7 @@ import java.util.Set;
 public class VaultManager {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final String BACKUP_DIR = System.getProperty("user.home") + File.separator + ".lockfile" + File.separator + "backups";
+    private static final String BACKUP_DIR = StorageUtils.getBackupDir();
 
     public static void saveVault(Vault vault, String password, File file) throws Exception {
         String json = mapper.writeValueAsString(vault);
