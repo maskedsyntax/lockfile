@@ -34,22 +34,6 @@ If a service offers 2FA via an app (like Google Authenticator), you can save the
 - Modern high-contrast dark theme with Feather icons.
 - Cross-platform support (Linux, macOS, Windows).
 
-## Roadmap
-### Phase 1: Production Hardening
-- [x] Unit Tests for Cryptography (Ensuring security integrity)
-- [ ] Change Master Password (Re-encryption logic)
-- [ ] Secure Memory Handling (Zeroing sensitive data)
-
-### Phase 2: Power-User Features
-- [ ] Keyboard Shortcuts (Quick navigation)
-- [ ] Settings Screen (Customizable thresholds)
-- [ ] Import from CSV (Migration tool)
-
-### Phase 3: Final UX Polish
-- [ ] System Tray Integration (Background activity)
-- [ ] Custom Application Icon
-- [ ] Entry Sorting (Title, Date modified)
-
 ## Tech Stack
 - Java 25+ (OpenJDK)
 - JavaFX 21

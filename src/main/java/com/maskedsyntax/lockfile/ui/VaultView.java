@@ -84,6 +84,12 @@ public class VaultView extends BorderPane {
         Button addEntryBtn = new Button("New Entry", new FontIcon("fth-plus-circle"));
         Button editEntryBtn = new Button("Edit", new FontIcon("fth-edit"));
         Button deleteEntryBtn = new Button("Delete", new FontIcon("fth-trash-2"));
+        
+        MenuButton settingsBtn = new MenuButton("Settings", new FontIcon("fth-settings"));
+        MenuItem changePassItem = new MenuItem("Change Master Password", new FontIcon("fth-key"));
+        changePassItem.setOnAction(e -> handleChangeMasterPassword());
+        settingsBtn.getItems().add(changePassItem);
+
         Button lockBtn = new Button("Lock", new FontIcon("fth-lock"));
         Button exportBtn = new Button("Export", new FontIcon("fth-download"));
 
@@ -102,7 +108,7 @@ public class VaultView extends BorderPane {
         Region spacer = new Region();
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
 
-        return new ToolBar(addFolderBtn, addEntryBtn, new Separator(), editEntryBtn, deleteEntryBtn, spacer, searchField, new Separator(), lockBtn, exportBtn);
+        return new ToolBar(addFolderBtn, addEntryBtn, new Separator(), editEntryBtn, deleteEntryBtn, spacer, searchField, new Separator(), settingsBtn, lockBtn, exportBtn);
     }
 
     private void handleSearch(String query) {
@@ -467,6 +473,30 @@ public class VaultView extends BorderPane {
         stage.setScene(scene);
         stage.setResizable(false);
         stage.centerOnScreen();
+    }
+
+    private void handleChangeMasterPassword() {
+        ChangePasswordDialog dialog = new ChangePasswordDialog();
+        dialog.showAndWait().ifPresent(newPassword -> {
+            try {
+                // To change the password, we simply re-save the current vault object with the new password.
+                // The VaultManager already handles encryption with whatever password is provided.
+                VaultManager.saveVault(vault, newPassword, vaultFile);
+                
+                // We need to update the local masterPassword reference so subsequent saves use the new one.
+                // Since masterPassword is final, we'd need to re-initialize or structure differently.
+                // For simplicity, we'll alert the user and force a re-lock to ensure everything is consistent.
+                
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Master password changed successfully. Please log in again with your new password.", ButtonType.OK);
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+                alert.showAndWait();
+                handleLock();
+            } catch (Exception e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to change master password: " + e.getMessage(), ButtonType.OK);
+                alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());
+                alert.showAndWait();
+            }
+        });
     }
 
     private void handleDownloadAttachment(Attachment att) {
