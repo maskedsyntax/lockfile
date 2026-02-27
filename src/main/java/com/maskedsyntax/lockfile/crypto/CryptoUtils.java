@@ -8,6 +8,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 import java.security.spec.KeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 
 public class CryptoUtils {
@@ -18,11 +19,15 @@ public class CryptoUtils {
     private static final int SALT_LENGTH = 16;
     private static final int ITERATIONS = 600000;
 
-    public static SecretKey deriveKey(String password, byte[] salt) throws Exception {
+    public static SecretKey deriveKey(char[] password, byte[] salt) throws Exception {
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATIONS, AES_KEY_SIZE);
+        KeySpec spec = new PBEKeySpec(password, salt, ITERATIONS, AES_KEY_SIZE);
         SecretKey tmp = factory.generateSecret(spec);
-        return new SecretKeySpec(tmp.getEncoded(), "AES");
+        SecretKey key = new SecretKeySpec(tmp.getEncoded(), "AES");
+        // SecretKeyFactory.generateSecret might return a key that contains the password or sensitive material
+        // The spec itself holds the char[], we should ideally clear it after use if we owned it, 
+        // but here it's passed in.
+        return key;
     }
 
     public static byte[] generateRandomBytes(int length) {
@@ -31,7 +36,7 @@ public class CryptoUtils {
         return bytes;
     }
 
-    public static String encrypt(String plainText, String password) throws Exception {
+    public static String encrypt(String plainText, char[] password) throws Exception {
         byte[] salt = generateRandomBytes(SALT_LENGTH);
         SecretKey key = deriveKey(password, salt);
 
@@ -48,10 +53,13 @@ public class CryptoUtils {
         System.arraycopy(iv, 0, encryptedMessage, SALT_LENGTH, GCM_IV_LENGTH);
         System.arraycopy(cipherText, 0, encryptedMessage, SALT_LENGTH + GCM_IV_LENGTH, cipherText.length);
 
+        // Wipe the key from memory
+        wipe(key.getEncoded());
+
         return Base64.getEncoder().encodeToString(encryptedMessage);
     }
 
-    public static String decrypt(String encryptedMessageBase64, String password) throws Exception {
+    public static String decrypt(String encryptedMessageBase64, char[] password) throws Exception {
         byte[] encryptedMessage = Base64.getDecoder().decode(encryptedMessageBase64);
 
         if (encryptedMessage.length < SALT_LENGTH + GCM_IV_LENGTH) {
@@ -74,6 +82,30 @@ public class CryptoUtils {
         cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
 
         byte[] plainTextBytes = cipher.doFinal(cipherText);
-        return new String(plainTextBytes, "UTF-8");
+        String result = new String(plainTextBytes, "UTF-8");
+        
+        // Wipe sensitive data
+        wipe(plainTextBytes);
+        wipe(key.getEncoded());
+        
+        return result;
+    }
+
+    /**
+     * Wipes sensitive data from memory by zeroing out the array.
+     */
+    public static void wipe(byte[] array) {
+        if (array != null) {
+            Arrays.fill(array, (byte) 0);
+        }
+    }
+
+    /**
+     * Wipes sensitive data from memory by zeroing out the array.
+     */
+    public static void wipe(char[] array) {
+        if (array != null) {
+            Arrays.fill(array, '0');
+        }
     }
 }

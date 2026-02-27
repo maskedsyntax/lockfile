@@ -1,5 +1,6 @@
 package com.maskedsyntax.lockfile.ui;
 
+import com.maskedsyntax.lockfile.crypto.CryptoUtils;
 import com.maskedsyntax.lockfile.model.Attachment;
 import com.maskedsyntax.lockfile.model.Entry;
 import com.maskedsyntax.lockfile.model.Folder;
@@ -29,6 +30,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -39,15 +43,16 @@ public class VaultView extends BorderPane {
     private final Stage stage;
     private final Vault vault;
     private final File vaultFile;
-    private final String masterPassword;
+    private final char[] masterPassword;
     private final IdleManager idleManager;
 
     private TreeView<Folder> folderTreeView;
     private TableView<Entry> entryTableView;
     private ObservableList<Entry> currentEntries;
     private Folder currentFolder = null;
+    private TextField searchField;
 
-    public VaultView(Stage stage, Vault vault, File vaultFile, String masterPassword) {
+    public VaultView(Stage stage, Vault vault, File vaultFile, char[] masterPassword) {
         this.stage = stage;
         this.vault = vault;
         this.vaultFile = vaultFile;
@@ -58,6 +63,7 @@ public class VaultView extends BorderPane {
         sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null) {
                 idleManager.start(newScene);
+                setupShortcuts(newScene);
             } else {
                 idleManager.stop();
             }
@@ -65,6 +71,15 @@ public class VaultView extends BorderPane {
 
         initUI();
         loadVaultData();
+    }
+
+    private void setupShortcuts(Scene scene) {
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_ANY), () -> {
+            if (searchField != null) searchField.requestFocus();
+        });
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_ANY), this::handleAddEntry);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_ANY), this::handleLock);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_ANY), this::saveVault);
     }
 
     private void initUI() {
@@ -93,7 +108,7 @@ public class VaultView extends BorderPane {
         Button lockBtn = new Button("Lock", new FontIcon("fth-lock"));
         Button exportBtn = new Button("Export", new FontIcon("fth-download"));
 
-        TextField searchField = new TextField();
+        searchField = new TextField();
         searchField.setPromptText("Search entries...");
         searchField.setPrefWidth(250);
         searchField.textProperty().addListener((obs, oldVal, newVal) -> handleSearch(newVal));
@@ -463,6 +478,7 @@ public class VaultView extends BorderPane {
     }
 
     private void handleLock() {
+        CryptoUtils.wipe(masterPassword);
         LoginView loginView = new LoginView(stage);
         Scene scene = new Scene(loginView, 500, 400);
         try {
@@ -483,9 +499,8 @@ public class VaultView extends BorderPane {
                 // The VaultManager already handles encryption with whatever password is provided.
                 VaultManager.saveVault(vault, newPassword, vaultFile);
                 
-                // We need to update the local masterPassword reference so subsequent saves use the new one.
-                // Since masterPassword is final, we'd need to re-initialize or structure differently.
-                // For simplicity, we'll alert the user and force a re-lock to ensure everything is consistent.
+                // We wipe the new password array after use
+                CryptoUtils.wipe(newPassword);
                 
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, "Master password changed successfully. Please log in again with your new password.", ButtonType.OK);
                 alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/maskedsyntax/lockfile/style.css").toExternalForm());

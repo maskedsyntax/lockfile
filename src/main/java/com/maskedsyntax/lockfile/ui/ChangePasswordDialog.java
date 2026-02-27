@@ -1,10 +1,11 @@
 package com.maskedsyntax.lockfile.ui;
 
+import com.maskedsyntax.lockfile.crypto.CryptoUtils;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 
-public class ChangePasswordDialog extends Dialog<String> {
+public class ChangePasswordDialog extends Dialog<char[]> {
 
     public ChangePasswordDialog() {
         setTitle("Change Master Password");
@@ -41,7 +42,7 @@ public class ChangePasswordDialog extends Dialog<String> {
 
         setResultConverter(dialogButton -> {
             if (dialogButton == changeButtonType) {
-                return newPasswordField.getText();
+                return newPasswordField.getText().toCharArray();
             }
             return null;
         });

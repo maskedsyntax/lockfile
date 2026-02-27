@@ -1,5 +1,6 @@
 package com.maskedsyntax.lockfile.ui;
 
+import com.maskedsyntax.lockfile.crypto.CryptoUtils;
 import com.maskedsyntax.lockfile.model.Vault;
 import com.maskedsyntax.lockfile.utils.StorageUtils;
 import com.maskedsyntax.lockfile.utils.VaultManager;
@@ -77,11 +78,14 @@ public class LoginView extends VBox {
             showError(errorLabel, "Vault file not found. Create a new one.");
             return;
         }
+        
+        char[] passwordChars = password.toCharArray();
         try {
-            Vault vault = VaultManager.loadVault(vaultFile, password);
-            openVaultView(vault, password);
+            Vault vault = VaultManager.loadVault(vaultFile, passwordChars);
+            openVaultView(vault, passwordChars);
         } catch (Exception e) {
             showError(errorLabel, "Failed to unlock vault. Incorrect password or corrupt file.");
+            CryptoUtils.wipe(passwordChars);
         }
     }
 
@@ -94,12 +98,15 @@ public class LoginView extends VBox {
             showError(errorLabel, "Vault file already exists. Choose a different path or unlock it.");
             return;
         }
+        
+        char[] passwordChars = password.toCharArray();
         try {
             Vault vault = new Vault();
-            VaultManager.saveVault(vault, password, vaultFile);
-            openVaultView(vault, password);
+            VaultManager.saveVault(vault, passwordChars, vaultFile);
+            openVaultView(vault, passwordChars);
         } catch (Exception e) {
             showError(errorLabel, "Failed to create vault.");
+            CryptoUtils.wipe(passwordChars);
             e.printStackTrace();
         }
     }
@@ -109,7 +116,7 @@ public class LoginView extends VBox {
         errorLabel.setVisible(true);
     }
 
-    private void openVaultView(Vault vault, String password) {
+    private void openVaultView(Vault vault, char[] password) {
         VaultView vaultView = new VaultView(stage, vault, vaultFile, password);
         Scene scene = new Scene(vaultView, 1000, 700);
         try {

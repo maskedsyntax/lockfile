@@ -9,7 +9,7 @@ public class CryptoUtilsTest {
     @Test
     public void testEncryptionDecryption() throws Exception {
         String originalText = "SuperSecretPassword123!";
-        String masterPassword = "MyMasterPassword";
+        char[] masterPassword = "MyMasterPassword".toCharArray();
 
         String encrypted = CryptoUtils.encrypt(originalText, masterPassword);
         assertNotNull(encrypted);
@@ -22,8 +22,8 @@ public class CryptoUtilsTest {
     @Test
     public void testEncryptionDecryptionWithWrongPassword() throws Exception {
         String originalText = "SafeData";
-        String masterPassword = "RightPassword";
-        String wrongPassword = "WrongPassword";
+        char[] masterPassword = "RightPassword".toCharArray();
+        char[] wrongPassword = "WrongPassword".toCharArray();
 
         String encrypted = CryptoUtils.encrypt(originalText, masterPassword);
         
@@ -34,7 +34,7 @@ public class CryptoUtilsTest {
 
     @Test
     public void testKeyDerivationUniqueness() throws Exception {
-        String password = "testPassword";
+        char[] password = "testPassword".toCharArray();
         byte[] salt1 = CryptoUtils.generateRandomBytes(16);
         byte[] salt2 = CryptoUtils.generateRandomBytes(16);
 
@@ -53,5 +53,16 @@ public class CryptoUtilsTest {
         assertEquals(16, b1.length);
         assertEquals(16, b2.length);
         assertNotEquals(java.util.Arrays.toString(b1), java.util.Arrays.toString(b2));
+    }
+
+    @Test
+    public void testWipe() {
+        byte[] b = {1, 2, 3, 4};
+        CryptoUtils.wipe(b);
+        assertArrayEquals(new byte[]{0, 0, 0, 0}, b);
+
+        char[] c = {'a', 'b', 'c'};
+        CryptoUtils.wipe(c);
+        assertArrayEquals(new char[]{'0', '0', '0'}, c);
     }
 }

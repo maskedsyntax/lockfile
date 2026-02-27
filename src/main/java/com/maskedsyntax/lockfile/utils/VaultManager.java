@@ -21,7 +21,7 @@ public class VaultManager {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String BACKUP_DIR = StorageUtils.getBackupDir();
 
-    public static void saveVault(Vault vault, String password, File file) throws Exception {
+    public static void saveVault(Vault vault, char[] password, File file) throws Exception {
         String json = mapper.writeValueAsString(vault);
         String encrypted = CryptoUtils.encrypt(json, password);
         
@@ -32,7 +32,7 @@ public class VaultManager {
         createBackup(file);
     }
 
-    public static Vault loadVault(File file, String password) throws Exception {
+    public static Vault loadVault(File file, char[] password) throws Exception {
         if (!file.exists()) {
             return new Vault();
         }
